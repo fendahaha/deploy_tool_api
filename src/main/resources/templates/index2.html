@@ -329,7 +329,7 @@
             });
         });
 
-        const brokerURL = 'ws://localhost:8080/portfolio';
+        const brokerURL = `ws://${location.host}/portfolio`;
         const groupId = 'file_watch';
         const user = UserChatClient.generateRandomUsername();
 
@@ -358,8 +358,10 @@
         return status
     }
 
-    const front_commands = command_init('front', 'front', 'front');
-    const api_commands = command_init('api', 'api', 'api');
+    // const front_commands = command_init('front', 'front', 'front');
+    // const api_commands = command_init('api', 'api', 'api');
+
+    console.log(location.host);
 </script>
 </body>
 </html>
