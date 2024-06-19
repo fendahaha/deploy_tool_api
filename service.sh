@@ -68,7 +68,7 @@ command(){
 }
 
 commonds(){
-    for i in "$@"; do
+    for i in $@; do
         command $i
     done
 }
