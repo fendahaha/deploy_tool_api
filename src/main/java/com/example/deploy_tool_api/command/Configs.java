@@ -26,11 +26,9 @@ public class Configs {
         HashMap<String, String> map = new HashMap<>();
 //        map.put("install", "D:\\develop\\language\\nodejs\\npm.cmd install > D:\\develop\\project\\company-project\\deploy_tool_api\\1.txt 2>&1");
 //        map.put("build", "D:\\develop\\language\\nodejs\\npm.cmd run build > D:\\develop\\project\\company-project\\deploy_tool_api\\1.txt 2>&1");
-        map.put("install", "/bin/sh service.sh front install");
-        map.put("build", "/bin/sh service.sh front build");
         map.put("start", "/bin/sh service.sh front start");
         map.put("stop", "/bin/sh service.sh front stop");
-        map.put("pull_restart", "/bin/sh service.sh front pull install stop build start");
+        map.put("pull_restart", "/bin/sh service.sh front pull_restart");
         return new Program(commandExec, map);
     }
 
