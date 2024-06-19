@@ -36,7 +36,7 @@ start() {
 }
 
 
-case "$0" in
+case "$1" in
     "pull")
         pull
         ;;
