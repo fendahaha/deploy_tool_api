@@ -23,9 +23,31 @@ get_front_pid() {
     front_pid=$(netstat -tunlp | grep ':3000' | awk '{print $7}' | awk -F '/' {'print $1'})
 }
 
+# ###################################
 front_pull() {
     cd $front_path
-    $git_excutor pull
+    $git_excutor pull >${front_log} 2>&1
+}
+
+front_install() {
+    cd $front_path
+    $npm_excutor install >${front_log} 2>&1
+}
+
+front_build() {
+    get_front_pid
+    if [ -z $front_pid ]; then
+        cd $front_path
+        $npm_excutor run gte
+        $npm_excutor run build >${front_log} 2>&1
+    else
+        echo "pid already exist: $front_pid, please stop first"
+    fi
+}
+
+front_dev() {
+    cd $front_path
+    $npm_excutor run dev >${front_log} 2>&1
 }
 
 front_stop() {
@@ -39,30 +61,30 @@ front_start() {
     get_front_pid
     if [ -z $front_pid ]; then
         cd $front_path
-        $npm_excutor run gte
         nohup npm run start >${front_log} 2>&1 &
     else
         echo "pid already exist: $front_pid"
     fi
 }
 
-front_install() {
+front_restart() {
     cd $front_path
+    cd ..
+    mkdir tmp_front
+    rsync -a "$front_path/" tmp_front/
+    cd tmp_front
     $npm_excutor install >${front_log} 2>&1
-}
-
-front_dev() {
-    cd $front_path
-    $npm_excutor run dev >${front_log} 2>&1
-}
-
-front_build() {
-    get_front_pid
-    if [ -z $front_pid ]; then
+    $npm_excutor run gte
+    $npm_excutor run build >${front_log} 2>&1
+    if [ $? -eq 0 ]; then
+        front_stop
+        cd ..
+        rsync -a tmp_front/ "$front_path/"
         cd $front_path
-        $npm_excutor run build >${front_log} 2>&1
+        nohup npm run start >${front_log} 2>&1 &
+        cd .. && rm -rf tmp_front
     else
-        echo "pid already exist: $front_pid, please stop first"
+        echo "'npm run build' has error! restart fail."
     fi
 }
 
@@ -91,16 +113,20 @@ front() {
         sleep 1
         front_start
         ;;
+    "pull_restart")
+        front_pull
+        front_restart
+        ;;
     "pid")
         get_front_pid
         echo $front_pid
         ;;
     esac
 }
-
+# #################################
 api_pull() {
     cd $api_path
-    $git_excutor pull
+    $git_excutor pull >$api_log 2>&1 &
 }
 
 api_stop() {
@@ -156,7 +182,7 @@ front_commonds(){
 }
 
 args=("$@")
-args2=(${args[*]:1})
+args2=("${args[*]:1}")
 args2_length="${#args2[*]}"
 
 if [ $args2_length -eq 0 ]; then
