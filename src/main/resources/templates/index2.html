@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Title</title>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        button {
+            margin: 0;
+            border: 0;
+            outline: none;
+        }
+    </style>
+    <style>
+        [bd] {
+            border: 1px solid red;
+        }
+
+        .layout {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .commands-container {
+            flex: 0 0 auto;
+            width: calc(50% - 5px);
+            height: 100%;
+            display: grid;
+            grid-template-rows: 100px 1fr;
+        }
+
+        .commands-container > * {
+            width: 100%;
+            min-height: 0;
+            display: grid;
+        }
+
+        .commands-container .top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .commands-container .content {
+            position: relative;
+        }
+
+        .buttons {
+            display: flex;
+            align-content: center;
+            justify-content: space-evenly;
+            gap: 20px;
+        }
+
+        .buttons > * {
+            flex: 0 0 auto;
+        }
+
+        .cmd_button {
+            min-width: 100px;
+            padding: 8px 10px;
+            cursor: pointer;
+            background-color: dodgerblue;
+            color: white;
+            border-radius: 3px;
+        }
+
+        .cmd_button:hover {
+            opacity: 0.8;
+        }
+
+        .button-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: yellowgreen;
+            gap: 5px;
+        }
+
+        /*.msgs {*/
+        /*    position: absolute;*/
+        /*    left: 0;*/
+        /*    right: 0;*/
+        /*    top: 0;*/
+        /*    bottom: 0;*/
+        /*    overflow: auto;*/
+        /*    display: flex;*/
+        /*    flex-direction: column-reverse;*/
+        /*    background-color: black;*/
+        /*    color: white;*/
+        /*    padding: 10px 15px;*/
+        /*    border-radius: 10px;*/
+        /*}*/
+
+        /*.msg {*/
+        /*    white-space: nowrap;*/
+        /*}*/
+        .msgs {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            overflow: auto;
+            white-space: pre;
+            background-color: black;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+        }
+    </style>
+    <style>
+        .loader {
+            width: 25px;
+            padding: 4px;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: #25b09b;
+            --_m: conic-gradient(#0000 10%, #000), linear-gradient(#000 0 0) content-box;
+            -webkit-mask: var(--_m);
+            mask: var(--_m);
+            -webkit-mask-composite: source-out;
+            mask-composite: subtract;
+            animation: l3 1s infinite linear;
+        }
+
+        @keyframes l3 {
+            to {
+                transform: rotate(1turn)
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <div class="commands-container" id="front">
+        <div class="top">
+            <div>Front:</div>
+            <div class="buttons">
+                <button class="cmd_button" cmd="install">Install</button>
+                <button class="cmd_button" cmd="build">Build</button>
+                <button class="cmd_button" cmd="start">Start</button>
+                <button class="cmd_button" cmd="stop">Stop</button>
+                <button class="cmd_button" cmd="pull_restart">Pull & Restart</button>
+            </div>
+            <div class="button-status">
+                <!--<span>processing</span>
+                <div class="loader"></div>-->
+            </div>
+        </div>
+        <div class="content">
+            <!--            <div class="msgs">-->
+            <!--                <div class="msg">├ λ Hello everyone!</div>-->
+            <!--            </div>-->
+            <div class="msgs">├ λ Hello everyone!</div>
+        </div>
+    </div>
+    <div class="commands-container" id="api">
+        <div class="top">
+            <div>Api:</div>
+            <div class="buttons">
+                <button class="cmd_button" cmd="start">Start</button>
+                <button class="cmd_button" cmd="stop">Stop</button>
+                <button class="cmd_button" cmd="pull_restart">Pull & Restart</button>
+            </div>
+            <div class="button-status">
+                <!--<span>processing</span>
+                <div class="loader"></div>-->
+            </div>
+        </div>
+        <div class="content">
+            <div class="msgs"></div>
+        </div>
+    </div>
+</div>
+<script>
+    class UserChatClient {
+        stompClient;
+        connected = false;
+
+        constructor(brokerURL, groupId, roomId, user, onMsg, onConnected, onDisconnected) {
+            this.groupId = groupId;
+            this.roomId = roomId;
+            this.user = user;
+            const self = this;
+            let stompClient = new StompJs.Client({
+                brokerURL: brokerURL,
+                connectionTimeout: 30 * 1000,
+                reconnectDelay: 5 * 1000,
+                connectHeaders: {
+                    groupId: groupId,
+                    roomId: roomId,
+                },
+                onConnect: (frame) => {
+                    self.connected = true;
+                    onConnected && onConnected(stompClient);
+                    stompClient.subscribe(`/topic/chats/${groupId}/${roomId}`, (greeting) => {
+                        let chatMsg = JSON.parse(greeting.body);
+                        onMsg && onMsg(chatMsg);
+                    });
+                },
+                onDisconnect: (frame) => {
+                    onDisconnected && onDisconnected();
+                    self.connected = false
+                },
+                onWebSocketError: (error) => {
+                    console.error('Error with websocket', error);
+                },
+                onStompError: (frame) => {
+                    console.error('Broker reported error: ' + frame.headers['message']);
+                    console.error('Additional details: ' + frame.body);
+                },
+                // debug: (frame) => console.log(frame),
+            });
+            this.stompClient = stompClient;
+        }
+
+        connect() {
+            this.stompClient.activate();
+        }
+
+        disconnect() {
+            this.stompClient.deactivate();
+        }
+
+        sendMsg(msg) {
+            if (this.connected) {
+                this.stompClient.publish({
+                    destination: `/app/chats/${this.groupId}/${this.roomId}`,
+                    body: JSON.stringify({
+                        'user': this.user,
+                        'text': msg,
+                        'time': Date.now()
+                    })
+                });
+                return true
+            }
+        }
+
+        static generateRandomUsername() {
+            const getRandomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
+            const adjectives = ["Cool", "Super", "Fast", "Smart", "Brave", "Clever"];
+            const nouns = ["Tiger", "Dragon", "Eagle", "Lion", "Panther", "Wolf"];
+            const numbers = Math.floor(Math.random() * 1000);
+            return `${getRandomElement(adjectives)}${getRandomElement(nouns)}${numbers}`;
+        }
+    }
+</script>
+<script>
+    const g_exec_url = (program, cmd) => {
+        return `/command/exec/${program}/${cmd}`
+    }
+    const g_status_url = (program) => {
+        return `/command/status/${program}`
+    }
+    const show_status = (e_id, s) => {
+        if (s) {
+            if (s === 'processing') {
+                $(`#${e_id} .button-status`).empty().append(`<span>processing</span><div class="loader"></div>`);
+            } else {
+                $(`#${e_id} .button-status`).empty().text(s);
+            }
+        } else {
+            $(`#${e_id} .button-status`).empty();
+        }
+    }
+    const warning = (m) => {
+        alert(m);
+    }
+
+    function command_init(e_id, program, roomId) {
+        const status = {running: true};
+        const status_url = g_status_url(program);
+        const update_status = () => {
+            $.ajax(status_url, {
+                method: 'GET',
+                async: true,
+                dataType: 'json',
+                success: (data) => {
+                    if (data) {
+                        status.running = data.running;
+                        if (data.running) {
+                            show_status(e_id, 'processing')
+                        } else {
+                            show_status(e_id, false);
+                        }
+                    }
+                },
+            });
+        };
+        setInterval(update_status, 1000);
+        $(`#${e_id} .cmd_button`).on('click', function () {
+            if (status.running) {
+                warning("current program is in processing!");
+                return
+            }
+            const cmd = $(this).attr('cmd');
+            $.ajax(g_exec_url(program, cmd), {
+                method: 'GET',
+                async: true,
+                dataType: 'json',
+                success: (data) => {
+                    if (data) {
+                        status.running = data.running;
+                        if (data.running) {
+                            show_status(e_id, 'processing')
+                        } else {
+                            show_status(false);
+                        }
+                    }
+                },
+            });
+        });
+
+        const brokerURL = 'ws://localhost:8080/portfolio';
+        const groupId = 'file_watch';
+        const user = UserChatClient.generateRandomUsername();
+
+        const $msgs = $(`#${e_id} .msgs`);
+        // const onMsg = (msg) => {
+        //     const {user, text, time} = msg;
+        //     let h = `<div class="msg">${text}</div>`;
+        //     if (!text.trim()) {
+        //         h = `<br>`;
+        //     }
+        //     $msgs.prepend(h);
+        // }
+        const onMsg = (msg) => {
+            const {user, text, time} = msg;
+            $msgs.append(text);
+            $msgs[0].scrollTop = $msgs[0].scrollHeight;
+        }
+        const onConnected = (stompClient) => {
+
+        }
+        const onDisconnected = () => {
+
+        }
+        const userChatClient = new UserChatClient(brokerURL, groupId, roomId, user, onMsg, onConnected, onDisconnected);
+        userChatClient.connect();
+        return status
+    }
+
+    const front_commands = command_init('front', 'front', 'front');
+    const api_commands = command_init('api', 'api', 'api');
+</script>
+</body>
+</html>

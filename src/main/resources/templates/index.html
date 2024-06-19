@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Title</title>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+</head>
+<body>
+<style>
+    .msgs {
+        width: 1000px;
+        height: 800px;
+        overflow: auto;
+        border: 1px solid black;
+        display: flex;
+        flex-direction: column-reverse;
+        background-color: black;
+        color: white;
+        padding: 0 10px;
+    }
+
+    .msg {
+        white-space: nowrap;
+    }
+</style>
+<p id="status"></p>
+<div class="msgs">
+    <div class="msg">Hello everyone!</div>
+    <p>├ λ /matches/finished/[[...date]]</p>
+</div>
+<div>
+    <input type="text" id="msg"><input type="button" value="send" id="send"/>
+</div>
+<div>
+    <input type="button" value="connect" id="connect"/>
+    <input type="button" value="disconnect" id="disconnect"/>
+</div>
+<script>
+    class UserChatClient {
+        stompClient;
+        connected = false;
+
+        constructor(brokerURL, groupId, roomId, user, onMsg, onConnected, onDisconnected) {
+            this.groupId = groupId;
+            this.roomId = roomId;
+            this.user = user;
+            const self = this;
+            let stompClient = new StompJs.Client({
+                brokerURL: brokerURL,
+                connectionTimeout: 30 * 1000,
+                reconnectDelay: 5 * 1000,
+                connectHeaders: {
+                    groupId: groupId,
+                    roomId: roomId,
+                },
+                onConnect: (frame) => {
+                    self.connected = true;
+                    onConnected && onConnected(stompClient);
+                    stompClient.subscribe(`/topic/chats/${groupId}/${roomId}`, (greeting) => {
+                        let chatMsg = JSON.parse(greeting.body);
+                        onMsg && onMsg(chatMsg);
+                    });
+                },
+                onDisconnect: (frame) => {
+                    onDisconnected && onDisconnected();
+                    self.connected = false
+                },
+                onWebSocketError: (error) => {
+                    console.error('Error with websocket', error);
+                },
+                onStompError: (frame) => {
+                    console.error('Broker reported error: ' + frame.headers['message']);
+                    console.error('Additional details: ' + frame.body);
+                },
+                debug: (frame) => console.log(frame)
+            });
+            this.stompClient = stompClient;
+        }
+
+        connect() {
+            this.stompClient.activate();
+        }
+
+        disconnect() {
+            this.stompClient.deactivate();
+        }
+
+        sendMsg(msg) {
+            if (this.connected) {
+                this.stompClient.publish({
+                    destination: `/app/chats/${this.groupId}/${this.roomId}`,
+                    body: JSON.stringify({
+                        'user': this.user,
+                        'text': msg,
+                        'time': Date.now()
+                    })
+                });
+                return true
+            }
+        }
+
+        static generateRandomUsername() {
+            const getRandomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
+            const adjectives = ["Cool", "Super", "Fast", "Smart", "Brave", "Clever"];
+            const nouns = ["Tiger", "Dragon", "Eagle", "Lion", "Panther", "Wolf"];
+            const numbers = Math.floor(Math.random() * 1000);
+            return `${getRandomElement(adjectives)}${getRandomElement(nouns)}${numbers}`;
+        }
+    }
+</script>
+<script>
+    const brokerURL = 'ws://localhost:8080/portfolio';
+    const groupId = 'file_watch';
+    const roomId = 'front';
+    const user = UserChatClient.generateRandomUsername();
+    const onMsg = (msg) => {
+        const {user, text, time} = msg;
+        let h = `<div class="msg">${text}</div>`;
+        if (!text.trim()) {
+            h = `<br>`;
+        }
+        $(".msgs").prepend(h);
+    }
+    const onConnected = (stompClient) => {
+        $("#status").text('connected');
+    }
+    const onDisconnected = () => {
+        $("#status").text('disconnected')
+    }
+    const userChatClient = new UserChatClient(brokerURL, groupId, roomId, user, onMsg, onConnected, onDisconnected);
+
+    $(function () {
+        $("#connect").on('click', function () {
+            userChatClient.connect()
+        });
+        $("#disconnect").on('click', function () {
+            userChatClient.disconnect()
+        });
+        $("#send").on('click', function () {
+            let msg = $("#msg").val();
+            userChatClient.sendMsg(msg)
+        });
+    })
+</script>
+</body>
+</html>
