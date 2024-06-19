@@ -6,6 +6,7 @@ cd $workdir
 # api_pid=$(netstat -tunlp | grep ':8000' | awk '{print $7}' | awk -F '/' {'print $1'})
 # front_pid=$(netstat -tunlp | grep ':3000' | awk '{print $7}' | awk -F '/' {'print $1'})
 java_excutor=/opt/fenda/module/jdk-17.0.11/bin/java
+mvn_excutor=/opt/fenda/module/apache-maven-3.9.8/bin/mvn
 git_excutor=/usr/bin/git
 
 log=log.txt
@@ -26,6 +27,10 @@ stop() {
     fi
 }
 
+build(){
+  $mvn_excutor clean package
+}
+
 start() {
     get_pid
     if [ -z $pid ]; then
@@ -43,6 +48,9 @@ case "$1" in
     "stop")
         stop
         ;;
+    "build")
+        build
+        ;;
     "start")
         start
         ;;
@@ -56,3 +64,17 @@ case "$1" in
         echo $pid
         ;;
 esac
+
+commonds(){
+    for i in "$@"; do
+        api $i
+    done
+}
+
+args=("$@")
+args_length="${#args[*]}"
+if [ $args_length -eq 0 ]; then
+    exit
+fi
+
+commonds "${args[*]}"
