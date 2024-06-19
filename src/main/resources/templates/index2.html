@@ -165,13 +165,9 @@
             background: #282c34;
         }
 
-        .msgs {
-            display: flex;
-            flex-direction: column-reverse;
-        }
-
-        /*.msg {*/
-        /*    white-space: nowrap;*/
+        /*.msgs {*/
+        /*    display: flex;*/
+        /*    flex-direction: column-reverse;*/
         /*}*/
 
         .msgs {
@@ -181,6 +177,23 @@
 
         .msgs[wrap] {
             white-space: pre-wrap;
+        }
+
+        .cursor {
+            overflow: hidden;
+            animation: cursor1 0.6s infinite linear;
+        }
+
+        @keyframes cursor1 {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -239,7 +252,7 @@
             <!--            <div class="msgs">-->
             <!--                <div class="msg">├ λ Hello everyone!</div>-->
             <!--            </div>-->
-            <div class="msgs msgs-layout my-scrollbar">├ λ Hello everyone!<br></div>
+            <div class="msgs msgs-layout my-scrollbar"><span class="contents">├ λ Hello everyone!<br></span><span class="cursor">|</span></div>
         </div>
     </div>
     <div class="commands-container" id="api">
@@ -256,7 +269,7 @@
             </div>
         </div>
         <div class="content">
-            <div class="msgs msgs-layout my-scrollbar"></div>
+            <div class="msgs msgs-layout my-scrollbar"><span class="contents"></span><span class="cursor">|</span></div>
         </div>
     </div>
 </div>
@@ -334,6 +347,7 @@
     }
 </script>
 <script>
+    const host = location.host;
     const g_exec_url = (program, cmd) => {
         return `/command/exec/${program}/${cmd}`
     }
@@ -363,6 +377,7 @@
                 method: 'GET',
                 async: true,
                 dataType: 'json',
+                crossDomain:true,
                 success: (data) => {
                     if (data) {
                         status.running = data.running;
@@ -386,6 +401,7 @@
                 method: 'GET',
                 async: true,
                 dataType: 'json',
+                crossDomain:true,
                 success: (data) => {
                     if (data) {
                         status.running = data.running;
@@ -399,22 +415,23 @@
             });
         });
 
-        const brokerURL = `ws://${location.host}/portfolio`;
+        const brokerURL = `ws://${host}/portfolio`;
         const groupId = 'file_watch';
         const user = UserChatClient.generateRandomUsername();
 
         const $msgs = $(`#${e_id} .msgs`);
+        const $msgs_contents = $(`#${e_id} .msgs .contents`);
         // const onMsg = (msg) => {
         //     const {user, text, time} = msg;
         //     let h = `<div class="msg">${text}</div>`;
         //     if (!text.trim()) {
         //         h = `<br>`;
         //     }
-        //     $msgs.prepend(h);
+        //     $msgs_contents.prepend(h);
         // }
         const onMsg = (msg) => {
             const {user, text, time} = msg;
-            $msgs.append(text);
+            $msgs_contents.append(text);
             $msgs[0].scrollTop = $msgs[0].scrollHeight;
         }
         const onConnected = (stompClient) => {
