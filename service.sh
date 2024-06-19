@@ -41,33 +41,35 @@ start() {
 }
 
 
-case "$1" in
-    "pull")
-        pull
-        ;;
-    "stop")
-        stop
-        ;;
-    "build")
-        build
-        ;;
-    "start")
-        start
-        ;;
-    "restart")
-        stop
-        sleep 1
-        start
-        ;;
-    "pid")
-        get_pid
-        echo $pid
-        ;;
-esac
+command(){
+  case "$1" in
+      "pull")
+          pull
+          ;;
+      "stop")
+          stop
+          ;;
+      "build")
+          build
+          ;;
+      "start")
+          start
+          ;;
+      "restart")
+          stop
+          sleep 1
+          start
+          ;;
+      "pid")
+          get_pid
+          echo $pid
+          ;;
+  esac
+}
 
 commonds(){
     for i in "$@"; do
-        api $i
+        command $i
     done
 }
 
