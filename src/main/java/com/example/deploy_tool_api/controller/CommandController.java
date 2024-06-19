@@ -1,7 +1,7 @@
 package com.example.deploy_tool_api.controller;
 
-import com.example.deploy_tool_api.command.CommandsExecResult;
-import com.example.deploy_tool_api.command.CommandsExec;
+import com.example.deploy_tool_api.command.CommandExecResult;
+import com.example.deploy_tool_api.command.Program;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,18 +14,18 @@ import java.util.HashMap;
 @RestController
 public class CommandController {
 
-    @Resource(name = "apiCommands")
-    CommandsExec apiCommands;
-    @Resource(name = "frontCommands")
-    CommandsExec frontCommands;
+    @Resource(name = "apiProgram")
+    Program apiProgram;
+    @Resource(name = "frontProgram")
+    Program frontProgram;
 
     @GetMapping("/exec/{program}/{cmd}")
-    public CommandsExecResult exec(@PathVariable String program, @PathVariable String cmd) {
+    public CommandExecResult exec(@PathVariable String program, @PathVariable String cmd) {
         if (program.equals("api")) {
-            return apiCommands.exec(cmd);
+            return apiProgram.exec(cmd);
         }
         if (program.equals("front")) {
-            return frontCommands.exec(cmd);
+            return frontProgram.exec(cmd);
         }
         return null;
     }
@@ -33,10 +33,10 @@ public class CommandController {
     @GetMapping("/status/{program}")
     public Object status(@PathVariable String program) {
         if (program.equals("api")) {
-            return status_result(apiCommands.is_running());
+            return status_result(apiProgram.is_running());
         }
         if (program.equals("front")) {
-            return status_result(frontCommands.is_running());
+            return status_result(frontProgram.is_running());
         }
         return null;
     }

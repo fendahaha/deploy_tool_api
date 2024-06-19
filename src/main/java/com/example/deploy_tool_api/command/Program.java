@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class CommandsExec {
+public class Program {
     Boolean running = false;
     CommandExec commandExec;
     HashMap<String, String> map;
@@ -12,13 +12,13 @@ public class CommandsExec {
     Process currProcess;
     ExecutorService executorService;
 
-    public CommandsExec(CommandExec commandExec, HashMap<String, String> map) {
+    public Program(CommandExec commandExec, HashMap<String, String> map) {
         this.commandExec = commandExec;
         this.map = map;
         this.executorService = Executors.newSingleThreadExecutor();
     }
 
-    public synchronized CommandsExecResult exec(String cmd) {
+    public synchronized CommandExecResult exec(String cmd) {
         if (!running) {
             String s = map.get(cmd);
             if (s != null) {
@@ -31,11 +31,11 @@ public class CommandsExec {
                             finishedCallback();
                         }
                     });
-                    return new CommandsExecResult(true, true);
+                    return new CommandExecResult(true, true);
                 }
             }
         }
-        return new CommandsExecResult(false, running);
+        return new CommandExecResult(false, running);
     }
 
     public boolean is_running() {

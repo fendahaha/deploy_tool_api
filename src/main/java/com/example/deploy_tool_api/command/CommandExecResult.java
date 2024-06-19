@@ -1,10 +1,10 @@
 package com.example.deploy_tool_api.command;
 
-public class CommandsExecResult {
+public class CommandExecResult {
     Boolean success;
     Boolean running;
 
-    public CommandsExecResult(Boolean success, Boolean running) {
+    public CommandExecResult(Boolean success, Boolean running) {
         this.success = success;
         this.running = running;
     }
