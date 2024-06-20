@@ -26,30 +26,46 @@ public class InputStreamReadSend implements Runnable {
     }
 
     public void read1() {
+        BufferedReader reader = null;
         try {
-            BufferedReader reader = new BufferedReader(new java.io.InputStreamReader(inputStream, StandardCharsets.UTF_8));
+            reader = new BufferedReader(new java.io.InputStreamReader(inputStream, StandardCharsets.UTF_8));
             String line;
             while ((line = reader.readLine()) != null) {
                 send(line);
             }
-            reader.close();
         } catch (IOException e) {
             System.out.println("read error");
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
     public void read2() {
+        BufferedInputStream stream = null;
         try {
-            BufferedInputStream stream = new BufferedInputStream(inputStream);
+            stream = new BufferedInputStream(inputStream);
             byte[] b = new byte[1000];
             int n;
             while ((n = stream.read(b, 0, b.length)) > 0) {
                 String s = new String(b, 0, n, StandardCharsets.UTF_8);
                 send(s);
             }
-            stream.close();
         } catch (IOException e) {
             System.out.println("read error");
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
