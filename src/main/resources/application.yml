@@ -1,0 +1,18 @@
+programsProperties:
+  programs:
+    - name: "api"
+      logFile: "/opt/project/app/logs/api.log"
+      logFileSendTo: "api"
+      commandsDir: "/opt/project/app"
+      commands:
+        start: "/bin/sh service.sh api start"
+        stop: "/bin/sh service.sh api stop"
+        pull_restart: "/bin/sh service.sh api stop pull start"
+    - name: "front"
+      logFile: "/opt/project/app/logs/front.log"
+      logFileSendTo: "front"
+      commandsDir: "/opt/project/app"
+      commands:
+        start: "/bin/sh service.sh front start"
+        stop: "/bin/sh service.sh front stop"
+        pull_restart: "/bin/sh service.sh front pull_restart"

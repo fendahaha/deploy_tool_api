@@ -1,0 +1,10 @@
+programsProperties:
+  programs:
+    - name: "front"
+      logFile: "D:\\develop\\project\\company-project\\deploy_tool_api\\1.txt"
+      logFileSendTo: "front"
+      commandsDir: "D:\\develop\\project\\company-project\\siamsport.io\\wf-score-x-front"
+      commands:
+        start: "D:\\develop\\language\\nodejs\\npm.cmd install > D:\\develop\\project\\company-project\\deploy_tool_api\\1.txt 2>&1"
+        stop: "/bin/sh service.sh front stop"
+        pull_restart: "/bin/sh service.sh front pull_restart"
